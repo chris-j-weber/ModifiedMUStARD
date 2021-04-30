@@ -28,7 +28,7 @@ class DataLoader:
     UNK_TOKEN = "<UNK>"
     PAD_TOKEN = "<PAD>"
 
-    def __init__(self, config, path_prefix='.'):
+    def __init__(self, config, path_prefix):
 
         self.config = config
 

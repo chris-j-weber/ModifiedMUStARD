@@ -31,7 +31,7 @@ print("Args:", args)
 config = CONFIG_BY_KEY[args.config_key]
 
 # Load data
-data = DataLoader(config)
+data = DataLoader(config, args.path)
 
 
 def svm_train(train_input, train_output):
@@ -156,7 +156,7 @@ def trainSpeakerIndependent(model_name=None):
 def trainSpeakerDependent(model_name=None):
     
     # Load data
-    data = DataLoader(config)
+    data = DataLoader(config, args.path)
 
     # Iterating over each fold
     results=[]
