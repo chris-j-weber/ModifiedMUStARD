@@ -10,6 +10,7 @@ import numpy as np
 import jsonlines
 from collections import defaultdict
 from sklearn.model_selection import StratifiedKFold
+from datareader import *
 
 import config
 
@@ -19,6 +20,7 @@ def pickle_loader(filename):
         return pickle.load(open(filename, 'rb'))
     else:
         return pickle.load(open(filename, 'rb'), encoding="latin1")
+
 
 
 class DataLoader:
@@ -66,7 +68,7 @@ class DataLoader:
                     text_bert_embeddings.append(np.copy(bert_embedding_target))
 
         #
-        # Modified:
+        # replace text_bert_embeddings with modified embeddings
         #
         elif config.use_sbert and config.use_target_text:
             print('modified sbert')
@@ -85,7 +87,6 @@ class DataLoader:
             with jsonlines.open(self.UNIVERSAL_EBBEDDINGS) as reader:
                 for obj in reader:
                     text_bert_embeddings = list(obj)
-
         #
         # #/Modified Code
         #
@@ -135,7 +136,16 @@ class DataLoader:
         '''
         self.data_input, self.data_output = [], []
 
+        speaker_id_list = []
+        if self.config.use_balanced:
+            speaker_id_list = balanced_mustard_speaker_ids(read_mustard(self.DATA_PATH_JSON))
+
         for idx, ID in enumerate(json.keys()):
+
+            # modified to enable speaker balanced dataset
+            if self.config.use_balanced and idx not in speaker_id_list:
+                continue
+
             self.data_input.append((json[ID]["utterance"], json[ID]["speaker"], json[ID]["context"],
                                     json[ID]["context_speakers"], audio_features[ID] if audio_features else None,
                                     video_features_file[ID][()] if video_features_file else None,
