@@ -1,7 +1,6 @@
 import os
 import sys
 import re
-import json
 import pickle
 
 import h5py
@@ -10,7 +9,7 @@ import numpy as np
 import jsonlines
 from collections import defaultdict
 from sklearn.model_selection import StratifiedKFold
-from datareader import *
+from utils.datareader import *
 
 import config
 
@@ -30,24 +29,22 @@ class DataLoader:
     UNK_TOKEN = "<UNK>"
     PAD_TOKEN = "<PAD>"
 
-    def __init__(self, config, path_prefix):
+    def __init__(self, config):
 
         self.config = config
 
-        self.DATA_PATH_JSON = path_prefix + "/data/sarcasm_data.json"
-        self.AUDIO_PICKLE = path_prefix + "/data/audio_features.p"
-        self.INDICES_FILE = path_prefix + "/data/split_indices.p"
-        self.GLOVE_DICT = path_prefix + "/data/glove_full_dict.p"
-        self.BERT_TARGET_EMBEDDINGS = path_prefix + "/data/bert-output.jsonl"
+        self.DATA_PATH_JSON = "./data/sarcasm_data.json"
+        self.AUDIO_PICKLE = "./data/audio_features.p"
+        self.INDICES_FILE = "./data/split_indices.p"
+        self.GLOVE_DICT = "./data/glove_full_dict.p"
+        self.BERT_TARGET_EMBEDDINGS = "./data/bert-output.jsonl"
 
-        self.BALANCED_DATA_PATH_JSON = path_prefix + "/data/balanced_sarcasm_data.json"
-        self.BALANCED_BERT_TARGET_EMBEDDINGS = path_prefix + "/data/bert-output.jsonl"
 
-        self.SBERT_EBBEDDINGS = path_prefix + "/data/new-sbert-output.jsonl"
-        self.SBERT_TOKEN_EBBEDDINGS = path_prefix + "/data/new-sbert-output.jsonl"
-        self.UNIVERSAL_EBBEDDINGS = path_prefix + "/data/new-sbert-output.jsonl"
+        self.SBERT_EBBEDDINGS = "./data/new-sbert-output.jsonl"
+        self.SBERT_TOKEN_EBBEDDINGS = "./data/new-sbert-output.jsonl"
+        self.UNIVERSAL_EBBEDDINGS = "./data/new-universalEmbeddings-output.jsonl"
 
-        self.BERT_CONTEXT_EMBEDDINGS = path_prefix + "/data/bert-output-context.jsonl"
+        self.BERT_CONTEXT_EMBEDDINGS = "./data/bert-output-context.jsonl"
 
         dataset_json = json.load(open(self.DATA_PATH_JSON))
 
@@ -127,6 +124,7 @@ class DataLoader:
         # Setup speaker independent split
         self.speakerIndependentSplit()
 
+
     def parseData(self, json, audio_features, video_features_file=None, context_video_features_file=None,
                   text_bert_embeddings=None, context_bert_embeddings=None):
         '''
@@ -136,14 +134,17 @@ class DataLoader:
         '''
         self.data_input, self.data_output = [], []
 
+
+        # modified: generate speaker id list for balanced dataset
         speaker_id_list = []
         if self.config.use_balanced:
             speaker_id_list = balanced_mustard_speaker_ids(read_mustard(self.DATA_PATH_JSON))
 
+
         for idx, ID in enumerate(json.keys()):
 
-            # modified to enable speaker balanced dataset
-            if self.config.use_balanced and idx not in speaker_id_list:
+            # modified: if conig == use_balanced append only features which are from speaker ids in the balanced dataset
+            if self.config.use_balanced and ID not in speaker_id_list:
                 continue
 
             self.data_input.append((json[ID]["utterance"], json[ID]["speaker"], json[ID]["context"],
@@ -155,11 +156,21 @@ class DataLoader:
                                     json[ID]["show"]))
             self.data_output.append(int(json[ID]["sarcasm"]))
 
+
     def loadContextBert(self, dataset, ):
+
+        speaker_id_list = []
+        if self.config.use_balanced:
+            speaker_id_list = balanced_mustard_speaker_ids(read_mustard(self.DATA_PATH_JSON))
 
         # Prepare context video length list
         length = []
         for idx, ID in enumerate(dataset.keys()):
+
+            # modified to enable speaker balanced dataset
+            if self.config.use_balanced and ID not in speaker_id_list:
+                continue
+
             length.append(len(dataset[ID]["context"]))
 
         # Load BERT embeddings
@@ -206,6 +217,11 @@ class DataLoader:
         Prepares or loads (if existing) splits for k-fold
         '''
         skf = StratifiedKFold(n_splits=splits, shuffle=True)
+
+        print('blablabla')
+        print(len(self.data_input))
+        print(len(self.data_output))
+
         split_indices = [(train_index, test_index) for train_index, test_index in
                          skf.split(self.data_input, self.data_output)]
 

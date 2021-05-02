@@ -19,7 +19,6 @@ RESULT_FILE = "./output/{}.json"
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--config-key', default='', choices=list(CONFIG_BY_KEY.keys()))
-    parser.add_argument('--path', default='.')
 
     return parser.parse_args()
 
@@ -31,7 +30,7 @@ print("Args:", args)
 config = CONFIG_BY_KEY[args.config_key]
 
 # Load data
-data = DataLoader(config, args.path)
+data = DataLoader(config)
 
 
 def svm_train(train_input, train_output):
@@ -106,7 +105,7 @@ def trainIO(train_index, test_index):
         train_input = np.concatenate([train_input, datahelper.getTargetAudioPool(mode='train')], axis=1)
         test_input = np.concatenate([test_input, datahelper.getTargetAudioPool(mode='test')], axis=1)
 
-    print(train_input)
+    #print(train_input)
 
 
     if train_input.shape[1] == 0:
@@ -156,7 +155,7 @@ def trainSpeakerIndependent(model_name=None):
 def trainSpeakerDependent(model_name=None):
     
     # Load data
-    data = DataLoader(config, args.path)
+    data = DataLoader(config)
 
     # Iterating over each fold
     results=[]
